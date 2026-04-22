@@ -1,0 +1,13 @@
+{
+  "name": "sendflow-mcp",
+  "version": "2.0.0",
+  "description": "Servidor MCP local para integracao com a API do Sendflow - 41 ferramentas",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.9.0"
+  }
+}

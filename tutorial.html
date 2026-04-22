@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claude + SendFlow via MCP — Tutorial</title>
+  <style>
+    @font-face {
+      font-family: 'Inter';
+      src: url('/usr/share/fonts/truetype/lato/Lato-Light.ttf') format('truetype');
+      font-weight: 300;
+    }
+    @font-face {
+      font-family: 'Inter';
+      src: url('/usr/share/fonts/truetype/lato/Lato-Regular.ttf') format('truetype');
+      font-weight: 400;
+    }
+    @font-face {
+      font-family: 'Inter';
+      src: url('/usr/share/fonts/truetype/lato/Lato-Semibold.ttf') format('truetype');
+      font-weight: 600;
+    }
+    @font-face {
+      font-family: 'Inter';
+      src: url('/usr/share/fonts/truetype/lato/Lato-Bold.ttf') format('truetype');
+      font-weight: 700;
+    }
+    @font-face {
+      font-family: 'Space Grotesk';
+      src: url('/usr/share/fonts/truetype/google-fonts/Poppins-Medium.ttf') format('truetype');
+      font-weight: 500;
+    }
+    @font-face {
+      font-family: 'Space Grotesk';
+      src: url('/usr/share/fonts/truetype/google-fonts/Poppins-Bold.ttf') format('truetype');
+      font-weight: 600;
+    }
+  </style>
+  <style>
+    :root {
+      --yellow:     #FFDE07;
+      --black:      #030404;
+      --navy:       #032040;
+      --white:      #FDFCF7;
+      --gray-light: #EAEAEA;
+      --gray-mid:   #B3B3B3;
+      --purple:     #A259FF;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #d0d0d0;
+      color: var(--black);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── PAGE SHELL ─────────────────────────────────────────────────────────── */
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      height: 297mm;
+      margin: 0;
+      background: var(--white);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+    }
+    @media screen {
+      .page {
+        width: 794px;
+        min-height: 1123px;
+        height: auto;
+        margin: 40px auto;
+        box-shadow: 0 6px 40px rgba(3,4,4,0.18);
+      }
+    }
+
+    /* page number */
+    .pg-num {
+      position: absolute;
+      bottom: 36px;
+      right: 52px;
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--gray-mid);
+      letter-spacing: 0.05em;
+    }
+
+    /* ── COVER ──────────────────────────────────────────────────────────────── */
+    .cover {
+      background: var(--black);
+      color: var(--white);
+      padding: 64px;
+      min-height: 1123px;
+    }
+
+    .cover-logo {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 110px;
+    }
+    .cover-logo-svg { display: block; }
+    .cover-logo-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--white);
+      letter-spacing: -0.01em;
+    }
+
+    .cover-tag {
+      display: inline-block;
+      background: var(--yellow);
+      color: var(--black);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      margin-bottom: 28px;
+    }
+
+    .cover-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 52px;
+      font-weight: 600;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+    }
+    .cover-title em { color: var(--yellow); font-style: normal; }
+
+    .cover-subtitle {
+      font-size: 16px;
+      font-weight: 300;
+      color: var(--gray-mid);
+      line-height: 1.6;
+      max-width: 440px;
+      margin-bottom: 80px;
+    }
+
+    .cover-bar {
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--yellow) 30%, transparent 100%);
+      margin-bottom: 40px;
+    }
+
+    .cover-meta {
+      display: flex;
+      gap: 48px;
+    }
+    .cover-meta-item label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gray-mid);
+      display: block;
+      margin-bottom: 4px;
+    }
+    .cover-meta-item span {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--white);
+    }
+
+    .cover-accent-box {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 280px;
+      height: 280px;
+      border: 60px solid transparent;
+      border-bottom-color: #0d0e0e;
+      border-right-color: #0d0e0e;
+      opacity: 0.5;
+    }
+    .cover-accent-dot {
+      position: absolute;
+      bottom: 64px;
+      right: 64px;
+      width: 80px;
+      height: 80px;
+      border: 3px solid var(--yellow);
+      border-radius: 50%;
+      opacity: 0.25;
+    }
+
+    /* ── CONTENT PAGE ────────────────────────────────────────────────────────── */
+    .page-inner {
+      padding: 60px 64px 80px;
+      flex: 1;
+    }
+
+    /* section label above title */
+    .sec-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--gray-mid);
+      margin-bottom: 10px;
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+
+    .sec-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 34px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 8px;
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+    .sec-title em { color: var(--yellow); font-style: normal; }
+
+    .sec-divider {
+      width: 48px;
+      height: 3px;
+      background: var(--yellow);
+      margin-bottom: 36px;
+    }
+
+    .body-text {
+      font-size: 15px;
+      font-weight: 400;
+      line-height: 1.75;
+      color: #1a1a1a;
+      margin-bottom: 20px;
+    }
+
+    /* ── NUMBERED STEPS ─────────────────────────────────────────────────────── */
+    .step-list { list-style: none; margin-bottom: 24px; }
+    .step-list li {
+      display: flex;
+      gap: 18px;
+      align-items: flex-start;
+      margin-bottom: 18px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 30px;
+      height: 30px;
+      background: var(--yellow);
+      color: var(--black);
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+    }
+    .step-body { flex: 1; }
+    .step-body strong {
+      font-size: 14px;
+      font-weight: 700;
+      display: block;
+      margin-bottom: 3px;
+    }
+    .step-body p {
+      font-size: 13.5px;
+      line-height: 1.65;
+      color: #333;
+    }
+
+    /* ── CALLOUT BOXES ──────────────────────────────────────────────────────── */
+    .callout {
+      border-left: 4px solid var(--yellow);
+      background: #fffce6;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      border-radius: 0 4px 4px 0;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .callout strong { font-size: 13px; font-weight: 700; display: block; margin-bottom: 4px; }
+    .callout p { font-size: 13px; line-height: 1.65; color: #333; }
+
+    .callout-dark {
+      border-left: 4px solid var(--yellow);
+      background: var(--navy);
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      border-radius: 0 4px 4px 0;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .callout-dark strong { font-size: 13px; font-weight: 700; display: block; margin-bottom: 4px; color: var(--yellow); }
+    .callout-dark p { font-size: 13px; line-height: 1.65; color: #c8d6e5; }
+
+    /* ── CODE BLOCKS ────────────────────────────────────────────────────────── */
+    .code-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gray-mid);
+      margin-bottom: 6px;
+    }
+    .code-block {
+      background: var(--navy);
+      border-left: 3px solid var(--yellow);
+      border-radius: 0 6px 6px 0;
+      padding: 20px 22px;
+      margin-bottom: 24px;
+      overflow-x: auto;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .code-block pre {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 12.5px;
+      line-height: 1.8;
+      color: #e2ebf3;
+      white-space: pre;
+    }
+    .code-block .kw  { color: var(--yellow); font-weight: 700; }
+    .code-block .cm  { color: #5d7a94; }
+    .code-block .str { color: #7ec8a4; }
+    .code-block .var { color: #a8d8ff; }
+
+    /* inline code */
+    code {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 12.5px;
+      background: var(--gray-light);
+      padding: 2px 6px;
+      border-radius: 3px;
+      color: var(--navy);
+      font-weight: 700;
+    }
+
+    /* ── ARCHITECTURE DIAGRAM ────────────────────────────────────────────────── */
+    .arch-diagram {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin: 32px 0;
+    }
+    .arch-box {
+      background: var(--white);
+      border: 2px solid var(--black);
+      padding: 18px 22px;
+      text-align: center;
+      min-width: 160px;
+    }
+    .arch-box.accent { background: var(--black); color: var(--white); border-color: var(--black); }
+    .arch-box.accent .arch-box-title { color: var(--yellow); }
+    .arch-box-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .arch-box-sub { font-size: 11px; color: var(--gray-mid); }
+    .arch-box.accent .arch-box-sub { color: #7a9ab5; }
+
+    .arch-arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 0 8px;
+    }
+    .arch-arrow-line {
+      width: 48px;
+      height: 2px;
+      background: var(--yellow);
+      position: relative;
+    }
+    .arch-arrow-line::after {
+      content: '';
+      position: absolute;
+      right: -1px;
+      top: -4px;
+      border: 5px solid transparent;
+      border-left-color: var(--yellow);
+    }
+    .arch-arrow-label { font-size: 10px; color: var(--gray-mid); }
+
+    /* ── TOOL TABLE ──────────────────────────────────────────────────────────── */
+    .tool-section { margin-bottom: 20px; }
+    .tool-section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .tool-section-header .badge {
+      background: var(--yellow);
+      color: var(--black);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 2px;
+    }
+    .tool-section-header strong { font-size: 13px; }
+
+    .tool-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .tool-item {
+      background: var(--gray-light);
+      padding: 7px 12px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-family: 'Courier New', Courier, monospace;
+      color: var(--navy);
+      font-weight: 700;
+    }
+
+    /* ── PREREQ GRID ─────────────────────────────────────────────────────────── */
+    .prereq-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .prereq-card {
+      border: 1.5px solid var(--gray-light);
+      padding: 20px;
+      border-radius: 4px;
+    }
+    .prereq-card .icon {
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+    .prereq-card strong {
+      font-size: 14px;
+      font-weight: 700;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .prereq-card p { font-size: 12.5px; color: #555; line-height: 1.5; }
+    .prereq-card .check-cmd {
+      margin-top: 10px;
+      background: var(--gray-light);
+      padding: 6px 10px;
+      border-radius: 3px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 11.5px;
+      color: var(--navy);
+    }
+
+    /* ── PROMPT BOX ─────────────────────────────────────────────────────────── */
+    .prompt-box {
+      background: var(--navy);
+      border-radius: 6px;
+      padding: 28px 28px 24px;
+      position: relative;
+      margin-bottom: 24px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .prompt-box::before {
+      content: 'PROMPT';
+      position: absolute;
+      top: -10px;
+      left: 20px;
+      background: var(--yellow);
+      color: var(--black);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      padding: 3px 10px;
+    }
+    .prompt-box pre {
+      font-family: 'Inter', sans-serif;
+      font-size: 12.5px;
+      line-height: 1.85;
+      color: #d4e4f0;
+      white-space: pre-wrap;
+    }
+    .prompt-box pre strong { color: var(--yellow); font-weight: 700; }
+    .prompt-box pre em { color: #7ec8a4; font-style: normal; }
+
+    /* ── CHECKLIST ───────────────────────────────────────────────────────────── */
+    .checklist { list-style: none; }
+    .checklist li {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--gray-light);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .checklist li:last-child { border-bottom: none; }
+    .check-box {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--yellow);
+      border-radius: 2px;
+      margin-top: 2px;
+    }
+
+    /* ── TROUBLE TABLE ───────────────────────────────────────────────────────── */
+    .trouble-item {
+      margin-bottom: 24px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--gray-light);
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .trouble-item:last-child { border-bottom: none; }
+    .trouble-item .err {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: #c0392b;
+      background: #fdf0f0;
+      padding: 6px 12px;
+      border-radius: 3px;
+      border-left: 3px solid #c0392b;
+      margin-bottom: 8px;
+      display: inline-block;
+    }
+    .trouble-item .cause {
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 6px;
+    }
+    .trouble-item .fix { font-size: 13px; line-height: 1.65; }
+
+    /* ── EXAMPLE PROMPTS ─────────────────────────────────────────────────────── */
+    .example-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 24px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .example-card {
+      background: var(--black);
+      border-radius: 6px;
+      padding: 18px;
+      position: relative;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .example-card .quote-icon {
+      color: var(--yellow);
+      font-size: 22px;
+      font-family: Georgia, serif;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .example-card p {
+      font-size: 12.5px;
+      color: #c8d6e5;
+      line-height: 1.7;
+      font-style: italic;
+    }
+    .example-card .tool-used {
+      margin-top: 12px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 10.5px;
+      color: var(--yellow);
+      font-style: normal;
+    }
+
+    /* ── HEADER STRIPE ───────────────────────────────────────────────────────── */
+    .page-header-stripe {
+      background: var(--black);
+      height: 6px;
+      width: 100%;
+    }
+    .page-header-stripe.yellow { background: var(--yellow); }
+
+    /* ── INDEX PAGE ──────────────────────────────────────────────────────────── */
+    .index-list { list-style: none; }
+    .index-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 10px 0;
+      border-bottom: 1px dotted var(--gray-light);
+      font-size: 14px;
+    }
+    .index-list li:last-child { border-bottom: none; }
+    .index-num { color: var(--gray-mid); font-size: 12px; }
+    .index-list .section-group {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gray-mid);
+      padding: 16px 0 4px;
+      border-bottom: none;
+    }
+
+    /* ── BACK COVER ──────────────────────────────────────────────────────────── */
+    .back-cover {
+      background: var(--navy);
+      min-height: 1123px;
+      padding: 64px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: var(--white);
+    }
+    .back-cover .big-quote {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 42px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      max-width: 560px;
+    }
+    .back-cover .big-quote em { color: var(--yellow); font-style: normal; }
+
+    .back-cover .footer-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .back-cover .footer-logo {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .back-cover .footer-logo-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--white);
+    }
+
+    .back-cover .footer-links {
+      text-align: right;
+      font-size: 12px;
+      color: #7a9ab5;
+      line-height: 2;
+    }
+
+    .back-cover-accent {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 320px;
+      height: 320px;
+      border-right: 80px solid rgba(255,222,7,0.06);
+      border-top: 80px solid rgba(255,222,7,0.06);
+    }
+
+    /* ── PRINT / WEASYPRINT ─────────────────────────────────────────────────── */
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    @media print {
+      body { background: white; margin: 0; padding: 0; }
+      .page { margin: 0; box-shadow: none; page-break-after: always; break-after: page; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════ COVER -->
+<div class="page cover">
+  <div class="cover-logo">
+    <svg class="cover-logo-svg" viewBox="0 0 140 130" width="80" height="74" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polyline points="22,90 62,36 110,16" stroke="#FFDE07" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+      <polyline points="62,128 62,78 110,105" stroke="#FFDE07" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="cover-logo-text">Send Flow</div>
+  </div>
+
+  <div>
+    <div class="cover-tag">Tutorial Técnico · Node.js</div>
+    <h1 class="cover-title">Claude +<br>Send<em>Flow</em><br>via MCP</h1>
+    <p class="cover-subtitle">
+      Guia completo para criar um servidor MCP local em Node.js e integrar a SendAPI
+      do Sendflow ao Claude Code — sem intermediários, sem código extra.
+    </p>
+  </div>
+
+  <div>
+    <div class="cover-bar"></div>
+    <div class="cover-meta">
+      <div class="cover-meta-item">
+        <label>Versão</label>
+        <span>2.0 — Node.js</span>
+      </div>
+      <div class="cover-meta-item">
+        <label>Ferramentas</label>
+        <span>41 tools</span>
+      </div>
+      <div class="cover-meta-item">
+        <label>Runtime</label>
+        <span>Node.js 18+</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="cover-accent-box"></div>
+  <div class="cover-accent-dot"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ ÍNDICE -->
+<div class="page">
+  <div class="page-header-stripe yellow"></div>
+  <div class="page-inner">
+    <div class="sec-label">Navegação</div>
+    <h2 class="sec-title">Índice</h2>
+    <div class="sec-divider"></div>
+
+    <ul class="index-list">
+      <li class="section-group"><span>Conceito</span></li>
+      <li><span>01 · O que é o MCP?</span><span class="index-num">Pág 03</span></li>
+      <li><span>02 · O que você vai construir</span><span class="index-num">Pág 04</span></li>
+      <li><span>03 · Pré-requisitos</span><span class="index-num">Pág 05</span></li>
+
+      <li class="section-group"><span>Criando a integração</span></li>
+      <li><span>04 · Prompt para o Claude Cowork</span><span class="index-num">Pág 06</span></li>
+      <li><span>05 · Estrutura do projeto</span><span class="index-num">Pág 07</span></li>
+      <li><span>06 · O servidor MCP (index.js)</span><span class="index-num">Pág 08</span></li>
+      <li><span>07 · Instalar e registrar</span><span class="index-num">Pág 09</span></li>
+
+      <li class="section-group"><span>Usando</span></li>
+      <li><span>08 · Testar a integração</span><span class="index-num">Pág 10</span></li>
+      <li><span>09 · Uso no dia a dia</span><span class="index-num">Pág 11</span></li>
+      <li><span>10 · Troubleshooting</span><span class="index-num">Pág 12</span></li>
+      <li><span>11 · Checklist final</span><span class="index-num">Pág 13</span></li>
+    </ul>
+
+    <div style="margin-top: 48px;">
+      <div class="callout">
+        <strong>Sobre este tutorial</strong>
+        <p>
+          Este guia usa <strong>Node.js</strong> — uma alternativa mais simples ao servidor em Python.
+          Não é necessário criar ambientes virtuais, instalar Python ou configurar dependências complexas.
+          Tudo funciona com um único <code>npm install</code>.
+        </p>
+      </div>
+    </div>
+  </div>
+  <span class="pg-num">02</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ O QUE É MCP -->
+<div class="page">
+  <div class="page-header-stripe"></div>
+  <div class="page-inner">
+    <div class="sec-label">01 · Conceito</div>
+    <h2 class="sec-title">O que é o <em>MCP</em>?</h2>
+    <div class="sec-divider"></div>
+
+    <p class="body-text">
+      O <strong>Model Context Protocol (MCP)</strong> é um padrão aberto criado pela Anthropic que permite
+      ao Claude se conectar a ferramentas e serviços externos de forma segura e padronizada.
+      Pense nele como uma "tomada universal" entre o Claude e qualquer API ou sistema que você quiser integrar.
+    </p>
+
+    <p class="body-text">
+      Sem o MCP, o Claude não consegue chamar APIs externas diretamente. Com o MCP, você cria um
+      servidor local que expõe as capacidades de uma API como <strong>ferramentas</strong> — e o Claude
+      aprende a usá-las automaticamente a partir de linguagem natural.
+    </p>
+
+    <div class="callout-dark">
+      <strong>Em outras palavras:</strong>
+      <p>
+        Você diz "liste minhas campanhas", o Claude entende que deve chamar a ferramenta
+        <code style="color: var(--yellow); background: transparent; padding: 0;">list_campaigns</code>,
+        o servidor MCP monta a requisição HTTP autenticada e devolve o resultado — tudo sem você
+        escrever uma linha de código na hora.
+      </p>
+    </div>
+
+    <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px; margin-top: 8px;">Como funciona na prática</h3>
+
+    <ul class="step-list">
+      <li>
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Você cria um servidor MCP local</strong>
+          <p>Um arquivo Node.js que declara ferramentas e define como cada uma chama a API do Sendflow.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>O Claude Code carrega o servidor</strong>
+          <p>Ao iniciar, o Claude Code descobre as 41 ferramentas disponíveis e aprende seus parâmetros automaticamente.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Você conversa em linguagem natural</strong>
+          <p>O Claude escolhe a ferramenta certa, monta a chamada, executa e devolve a resposta formatada para você.</p>
+        </div>
+      </li>
+    </ul>
+
+    <div class="callout">
+      <strong>Por que não usar a API diretamente?</strong>
+      <p>
+        Você pode — mas com o MCP você não precisa lembrar endpoints, parâmetros ou formatos de data.
+        O Claude cuida disso. Você foca no que quer fazer, não em como fazer.
+      </p>
+    </div>
+  </div>
+  <span class="pg-num">03</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ ARQUITETURA -->
+<div class="page">
+  <div class="page-header-stripe"></div>
+  <div class="page-inner">
+    <div class="sec-label">02 · Visão Geral</div>
+    <h2 class="sec-title">O que você vai <em>construir</em></h2>
+    <div class="sec-divider"></div>
+
+    <p class="body-text">
+      Um servidor MCP local em Node.js que conecta o Claude Code à SendAPI do Sendflow,
+      expondo <strong>41 ferramentas</strong> organizadas em 8 categorias.
+    </p>
+
+    <div class="arch-diagram">
+      <div class="arch-box accent">
+        <div class="arch-box-title">Claude Code</div>
+        <div class="arch-box-sub">Terminal / VS Code</div>
+      </div>
+      <div class="arch-arrow">
+        <div class="arch-arrow-line"></div>
+        <div class="arch-arrow-label">linguagem<br>natural</div>
+      </div>
+      <div class="arch-box accent">
+        <div class="arch-box-title">Servidor MCP</div>
+        <div class="arch-box-sub">index.js · Node.js local</div>
+      </div>
+      <div class="arch-arrow">
+        <div class="arch-arrow-line"></div>
+        <div class="arch-arrow-label">HTTPS<br>REST</div>
+      </div>
+      <div class="arch-box accent">
+        <div class="arch-box-title">SendFlow</div>
+        <div class="arch-box-sub">sendflow.pro/sendapi</div>
+      </div>
+    </div>
+
+    <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 14px;">As 41 ferramentas disponíveis</h3>
+
+    <div class="tool-section">
+      <div class="tool-section-header">
+        <span class="badge">10</span>
+        <strong>Campanhas</strong>
+      </div>
+      <div class="tool-grid">
+        <div class="tool-item">list_campaigns</div>
+        <div class="tool-item">get_campaign</div>
+        <div class="tool-item">create_campaign</div>
+        <div class="tool-item">update_campaign</div>
+        <div class="tool-item">delete_campaign</div>
+        <div class="tool-item">get_campaign_analytics</div>
+        <div class="tool-item">get_campaign_groups</div>
+        <div class="tool-item">update_campaign_redirect_link</div>
+        <div class="tool-item">generate_campaign_leadscoring</div>
+        <div class="tool-item">get_campaign_leadscoring_url</div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div class="tool-section">
+        <div class="tool-section-header">
+          <span class="badge">9</span>
+          <strong>Ações</strong>
+        </div>
+        <div class="tool-grid" style="grid-template-columns: 1fr;">
+          <div class="tool-item">send_text_to_campaign</div>
+          <div class="tool-item">send_image_to_campaign</div>
+          <div class="tool-item">send_video_to_campaign</div>
+          <div class="tool-item">send_audio_to_campaign</div>
+          <div class="tool-item">send_message_universal</div>
+          <div class="tool-item">create_whatsapp_group</div>
+          <div class="tool-item">make_group_admin</div>
+          <div class="tool-item">analyze_groups</div>
+          <div class="tool-item">find_participant</div>
+        </div>
+      </div>
+      <div>
+        <div class="tool-section">
+          <div class="tool-section-header"><span class="badge">7</span><strong>Contas</strong></div>
+          <div class="tool-grid" style="grid-template-columns: 1fr;">
+            <div class="tool-item">list_accounts</div>
+            <div class="tool-item">create_account</div>
+            <div class="tool-item">update_account</div>
+            <div class="tool-item">delete_account</div>
+            <div class="tool-item">connect_account</div>
+            <div class="tool-item">disconnect_account</div>
+            <div class="tool-item">get_account_qrcode</div>
+          </div>
+        </div>
+        <div class="tool-section" style="margin-top: 10px;">
+          <div class="tool-section-header"><span class="badge">4</span><strong>Mensagens Diretas</strong></div>
+          <div class="tool-grid" style="grid-template-columns: 1fr;">
+            <div class="tool-item">send_direct_text</div>
+            <div class="tool-item">send_direct_image</div>
+            <div class="tool-item">send_direct_video</div>
+            <div class="tool-item">send_direct_audio</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span class="pg-num">04</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ PRÉ-REQUISITOS -->
+<div class="page">
+  <div class="page-header-stripe"></div>
+  <div class="page-inner">
+    <div class="sec-label">03 · Antes de começar</div>
+    <h2 class="sec-title">Pré-<em>requisitos</em></h2>
+    <div class="sec-divider"></div>
+
+    <p class="body-text">Você precisa de 4 itens instalados antes de começar. Verifique cada um.</p>
+
+    <div class="prereq-grid">
+      <div class="prereq-card">
+        <div class="icon">⬡</div>
+        <strong>Node.js 18 ou superior</strong>
+        <p>O runtime JavaScript que executa o servidor MCP localmente.</p>
+        <div class="check-cmd">node --version</div>
+        <p style="font-size:11px; color:#888; margin-top:6px;">Deve retornar v18.x ou superior.<br>Download: nodejs.org</p>
+      </div>
+      <div class="prereq-card">
+        <div class="icon">◈</div>
+        <strong>Claude Code (CLI)</strong>
+        <p>A interface de linha de comando do Claude que usa os servidores MCP.</p>
+        <div class="check-cmd">claude --version</div>
+        <p style="font-size:11px; color:#888; margin-top:6px;">Se não tiver: <code>npm install -g @anthropic-ai/claude-code</code></p>
+      </div>
+      <div class="prereq-card">
+        <div class="icon">◆</div>
+        <strong>API Key do Sendflow</strong>
+        <p>Chave de autenticação no formato <code>send_api-...</code></p>
+        <div class="check-cmd">Painel Sendflow → API Keys</div>
+        <p style="font-size:11px; color:#888; margin-top:6px;">Guarde em um lugar seguro. Nunca versione no Git.</p>
+      </div>
+      <div class="prereq-card">
+        <div class="icon">△</div>
+        <strong>Git for Windows</strong>
+        <p>Obrigatório no Windows para o Claude Code funcionar corretamente.</p>
+        <div class="check-cmd">git --version</div>
+        <p style="font-size:11px; color:#888; margin-top:6px;">Download: git-scm.com/downloads/win</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>Configurar o Git Bash no Windows (uma vez só)</strong>
+      <p>
+        Abra o PowerShell como administrador e execute:<br>
+        <code>[System.Environment]::SetEnvironmentVariable('CLAUDE_CODE_GIT_BASH_PATH', 'C:\Program Files\Git\bin\bash.exe', 'Machine')</code>
+        <br>Depois feche e reabra o terminal.
+      </p>
+    </div>
+
+    <div class="callout-dark">
+      <strong>Login no Claude Code</strong>
+      <p>
+        Após instalar, autentique uma vez:<br>
+        <code style="color: var(--yellow); background: transparent;">claude login</code><br>
+        Um navegador vai abrir para confirmar. Depois disso o login fica salvo.
+      </p>
+    </div>
+  </div>
+  <span class="pg-num">05</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ PROMPT COWORK -->
+<div class="page">
+  <div class="page-header-stripe yellow"></div>
+  <div class="page-inner">
+    <div class="sec-label">04 · Atalho</div>
+    <h2 class="sec-title">Prompt para o <em>Claude Cowork</em></h2>
+    <div class="sec-divider"></div>
+
+    <p class="body-text">
+      Se preferir não criar os arquivos manualmente, use o <strong>Claude Cowork</strong> para gerar toda a estrutura
+      de uma vez. Cole o prompt abaixo em uma nova conversa, anexe o arquivo de documentação da API,
+      e o Claude criará todos os arquivos automaticamente.
+    </p>
+
+    <div class="prompt-box">
+<pre>
+<strong>Preciso criar um servidor MCP local em Node.js para integrar a API do Sendflow com o Claude Code.</strong>
+
+<strong>O que preciso que você crie na pasta</strong> <em>C:\Users\[SEU_NOME]\Desktop\sendapi\</em><strong>:</strong>
+
+1. <em>index.js</em> — servidor MCP com 41 ferramentas cobrindo toda a SendAPI
+2. <em>package.json</em> — com @modelcontextprotocol/sdk v1.9.0, type: "module"
+3. <em>.gitignore</em> — ignorando node_modules/ e .env
+4. <em>.env.example</em> — template com SENDFLOW_API_KEY=send_api-...
+5. <em>SETUP.md</em> — instruções de instalação e registro
+
+<strong>Requisitos técnicos:</strong>
+- Node.js com ESM modules ("type": "module")
+- A API key deve ser lida de process.env.SENDFLOW_API_KEY
+- Base URL: https://sendflow.pro/sendapi
+- Auth: Authorization: Bearer {KEY}
+
+<strong>As 41 ferramentas devem cobrir (veja a documentação em anexo):</strong>
+- Campanhas (/releases) — 10 tools
+- Grupos de campanha (/release-groups) — 4 tools
+- Acoes (/actions) — 9 tools
+- Mensagens diretas (/send-*) — 4 tools
+- Templates (/message-templates) — 4 tools
+- Contas (/accounts) — 7 tools
+- Numeros bloqueados (/block-numbers) — 2 tools
+- Verificacao (/verify-number) — 1 tool
+
+Apos criar os arquivos, me da os comandos para instalar e
+registrar no Claude Code.</pre>
+    </div>
+
+    <div class="callout">
+      <strong>O que anexar no Cowork</strong>
+      <p>
+        Antes de enviar o prompt, anexe o arquivo <code>sendflow-api-documentacao-completa.md</code>
+        com todos os endpoints. O Claude usará a documentação para criar as ferramentas corretas.
+        Se não tiver o arquivo, peça ao time do Sendflow ou gere via painel da API.
+      </p>
+    </div>
+  </div>
+  <span class="pg-num">06</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ ESTRUTURA -->
+<div class="page">
+  <div class="page-header-stripe"></div>
+  <div class="page-inner">
+    <div class="sec-label">05 · Projeto</div>
+    <h2 class="sec-title">Estrutura do <em>projeto</em></h2>
+    <div class="sec-divider"></div>
+
+    <p class="body-text">
+      O servidor MCP é composto por apenas <strong>5 arquivos</strong>. Estrutura simples, sem configuração complexa.
+    </p>
+
+    <div class="code-label">Estrutura da pasta</div>
+    <div class="code-block">
+      <pre><span class="kw">sendapi/</span>
+├── <span class="var">index.js</span>         <span class="cm"># servidor MCP — 41 ferramentas (~500 linhas)</span>
+├── <span class="var">package.json</span>     <span class="cm"># dependências do projeto</span>
+├── <span class="var">.env.example</span>     <span class="cm"># template da API key (nunca commite o .env real)</span>
+├── <span class="var">.gitignore</span>       <span class="cm"># ignora node_modules/ e .env</span>
+├── <span class="var">SETUP.md</span>         <span class="cm"># este guia de instalação</span>
+└── <span class="var">node_modules/</span>    <span class="cm"># criado pelo npm install (não editar)</span></pre>
+    </div>
+
+    <div class="code-label">package.json</div>
+    <div class="code-block">
+      <pre><span class="kw">{</span>
+  <span class="str">"name"</span>: <span class="str">"sendflow-mcp"</span>,
+  <span class="str">"version"</span>: <span class="str">"2.0.0"</span>,
+  <span class="str">"type"</span>: <span class="str">"module"</span>,            <span class="cm">// ESM — obrigatório</span>
+  <span class="str">"main"</span>: <span class="str">"index.js"</span>,
+  <span class="str">"scripts"</span>: <span class="kw">{</span>
+    <span class="str">"start"</span>: <span class="str">"node index.js"</span>
+  <span class="kw">}</span>,
+  <span class="str">"dependencies"</span>: <span class="kw">{</span>
+    <span class="str">"@modelcontextprotocol/sdk"</span>: <span class="str">"^1.9.0"</span>
+  <span class="kw">}</span>
+<span class="kw">}</span></pre>
+    </div>
+
+    <div class="callout-dark">
+      <strong>Por que v1.9.0 e nao a mais recente?</strong>
+      <p>
+        A partir da v1.10.x, o SDK passou a usar zod v4, que tem incompatibilidades de importacao com
+        Node.js v22 em ambientes ESM. A v1.9.0 e estavel e cobre todos os recursos necessarios.
+      </p>
+    </div>
+
+    <div class="code-label">.env.example</div>
+    <div class="code-block">
+      <pre><span class="cm"># Copie para .env e preencha com sua chave real</span>
+<span class="kw">SENDFLOW_API_KEY</span>=<span class="str">send_api-coloque_sua_chave_aqui</span></pre>
+    </div>
+  </div>
+  <span class="pg-num">07</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ INDEX.JS -->
+<div class="page">
+  <div class="page-header-stripe"></div>
+  <div class="page-inner">
+    <div class="sec-label">06 · Servidor</div>
+    <h2 class="sec-title">O servidor MCP <em>(index.js)</em></h2>
+    <div class="sec-divider"></div>
+
+    <p class="body-text">
+      O <code>index.js</code> é o coração da integração. Ele usa o SDK do MCP para expor as ferramentas da
+      SendAPI ao Claude Code. O arquivo tem ~500 linhas e está pronto para usar — não é necessário editá-lo.
+    </p>
+
+    <div class="code-label">Estrutura do index.js — visão geral</div>
+    <div class="code-block">
+      <pre><span class="cm">// 1. Importações do SDK MCP</span>
+<span class="kw">import</span> { Server } <span class="kw">from</span> <span class="str">"@modelcontextprotocol/sdk/server/index.js"</span>
+<span class="kw">import</span> { StdioServerTransport } <span class="kw">from</span> <span class="str">"@modelcontextprotocol/sdk/server/stdio.js"</span>
+
+<span class="cm">// 2. Configuração — lê a API key do ambiente</span>
+<span class="kw">const</span> <span class="var">API_KEY</span> = process.env.<span class="var">SENDFLOW_API_KEY</span>
+<span class="kw">const</span> <span class="var">BASE_URL</span> = <span class="str">"https://sendflow.pro/sendapi"</span>
+
+<span class="cm">// 3. Helper HTTP — faz as chamadas autenticadas</span>
+<span class="kw">async function</span> <span class="var">callAPI</span>(method, path, body) { <span class="cm">... }</span>
+
+<span class="cm">// 4. Definição das 41 ferramentas (TOOLS array)</span>
+<span class="kw">const</span> <span class="var">TOOLS</span> = [
+  <span class="cm">// Campanhas (10), Grupos (4), Acoes (9), Mensagens diretas (4),</span>
+  <span class="cm">// Templates (4), Contas (7), Bloqueios (2), Verificacao (1)</span>
+]
+
+<span class="cm">// 5. Handler — executa a ferramenta certa quando o Claude chama</span>
+<span class="kw">async function</span> <span class="var">handleTool</span>(name, args) {
+  <span class="kw">switch</span> (name) { <span class="cm">... 41 cases ...</span> }
+}
+
+<span class="cm">// 6. Inicialização do servidor via stdio</span>
+<span class="kw">const</span> <span class="var">server</span> = <span class="kw">new</span> Server({ name: <span class="str">"sendflow-mcp"</span>, version: <span class="str">"2.0.0"</span> }, ...)
+<span class="kw">await</span> server.connect(<span class="kw">new</span> StdioServerTransport())</pre>
+    </div>
+
+    <div class="callout">
+      <strong>Cada ferramenta tem 3 partes:</strong>
+      <p>
+        <strong>name</strong> — identificador único (ex: <code>list_campaigns</code>) ·
+        <strong>description</strong> — o Claude usa isso para saber quando chamar a ferramenta ·
+        <strong>inputSchema</strong> — os parametros esperados (o Claude monta automaticamente)
+      </p>
+    </div>
+
+    <div class="callout-dark">
+      <strong>O servidor roda via stdio</strong>
+      <p>
+        O Claude Code inicia o processo <code>node index.js</code> automaticamente e se comunica via
+        stdin/stdout (stdio). Voce nao precisa deixar nenhum servidor rodando em background —
+        o Claude Code gerencia o ciclo de vida do processo.
+      </p>
+    </div>
+  </div>
+  <span class="pg-num">08</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ INSTALAR E REGISTRAR -->
+<div class="page">
+  <div class="page-header-stripe yellow"></div>
+  <div class="page-inner">
+    <div class="sec-label">07 · Configuracao</div>
+    <h2 class="sec-title">Instalar e <em>registrar</em></h2>
+    <div class="sec-divider"></div>
+
+    <p class="body-text">
+      Com os arquivos criados, sao apenas <strong>3 comandos</strong> para colocar tudo no ar.
+    </p>
+
+    <ul class="step-list">
+      <li>
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Instalar as dependencias</strong>
+          <p>Abra o terminal na pasta <code>sendapi</code> e execute:</p>
+        </div>
+      </li>
+    </ul>
+    <div class="code-block" style="margin-top: -8px;">
+      <pre>cd "C:\Users\raiss\Desktop\sendapi"
+npm install</pre>
+    </div>
+
+    <ul class="step-list">
+      <li>
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Registrar o servidor no Claude Code</strong>
+          <p>O flag <code>--scope user</code> torna o servidor disponivel em qualquer pasta do seu computador.</p>
+        </div>
+      </li>
+    </ul>
+    <div class="code-block" style="margin-top: -8px;">
+      <pre>claude mcp add sendflow <span class="kw">--scope user</span> \
+  <span class="kw">--env</span> <span class="var">SENDFLOW_API_KEY</span>=<span class="str">send_api-SUA_CHAVE_AQUI</span> \
+  -- node <span class="str">"C:\Users\raiss\Desktop\sendapi\index.js"</span></pre>
+    </div>
+
+    <ul class="step-list">
+      <li>
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Confirmar que foi registrado</strong>
+          <p>Deve aparecer <code>sendflow</code> na lista:</p>
+        </div>
+      </li>
+    </ul>
+    <div class="code-block" style="margin-top: -8px;">
+      <pre>claude mcp list
+<span class="cm"># sendflow   node C:\Users\raiss\Desktop\sendapi\index.js</span></pre>
+    </div>
+
+    <div class="callout">
+      <strong>Precisa substituir o servidor?</strong>
+      <p>
+        Se precisar atualizar o caminho ou a API key:<br>
+        <code>claude mcp remove sendflow</code> — e depois adicione novamente com o comando do passo 2.
+      </p>
+    </div>
+
+    <div class="callout-dark">
+      <strong>Alternativa: Claude Desktop</strong>
+      <p>
+        Se preferir usar o Claude Desktop, adicione o bloco abaixo ao arquivo
+        <code style="color: var(--yellow); background: transparent;">%APPDATA%\Claude\claude_desktop_config.json</code>:<br>
+        <code style="color: #7ec8a4; background: transparent;">{ "mcpServers": { "sendflow": { "command": "node", "args": ["C:\\...\\index.js"], "env": { "SENDFLOW_API_KEY": "..." } } } }</code>
+      </p>
+    </div>
+  </div>
+  <span class="pg-num">09</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ TESTAR -->
+<div class="page">
+  <div class="page-header-stripe"></div>
+  <div class="page-inner">
+    <div class="sec-label">08 · Validacao</div>
+    <h2 class="sec-title">Testar a <em>integracao</em></h2>
+    <div class="sec-divider"></div>
+
+    <p class="body-text">
+      Com o servidor registrado, abra o Claude Code no terminal e execute os testes abaixo em ordem.
+      O primeiro teste nao dispara nada — e seguro para comecar.
+    </p>
+
+    <div class="code-label">Abrir o Claude Code</div>
+    <div class="code-block">
+      <pre>claude</pre>
+    </div>
+
+    <ul class="step-list">
+      <li>
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Teste de leitura — lista de contas</strong>
+          <p>Nao dispara mensagem. So lê dados. Confirme com <code>y</code> quando solicitado.</p>
+        </div>
+      </li>
+    </ul>
+    <div class="code-block" style="margin-top:-8px;">
+      <pre>Liste minhas contas de WhatsApp.</pre>
+    </div>
+    <div class="callout" style="margin-bottom: 20px;">
+      <strong>Resultado esperado</strong>
+      <p>O Claude chama <code>list_accounts</code> e retorna um JSON com suas contas. Se isso funcionar, a integracao esta ativa.</p>
+    </div>
+
+    <ul class="step-list">
+      <li>
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Teste de campanha</strong>
+          <p>Lista todas as campanhas com seus IDs.</p>
+        </div>
+      </li>
+    </ul>
+    <div class="code-block" style="margin-top:-8px;">
+      <pre>Liste minhas campanhas do Sendflow.</pre>
+    </div>
+
+    <ul class="step-list">
+      <li>
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Teste de envio real</strong>
+          <p>Substitua os IDs reais obtidos nos testes anteriores.</p>
+        </div>
+      </li>
+    </ul>
+    <div class="code-block" style="margin-top:-8px;">
+      <pre>Use a ferramenta sendflow para enviar o texto
+<span class="str">"Teste integracao Claude + SendAPI"</span>
+para a campanha <span class="var">RELEASE_ID</span>, usando a conta <span class="var">ACCOUNT_ID</span>.</pre>
+    </div>
+
+    <div class="callout-dark">
+      <strong>Importante sobre o Claude Desktop vs Claude Code</strong>
+      <p>
+        O Claude Desktop roda o servidor MCP em ambiente sandbox com restricoes de rede.
+        Para chamadas reais a SendAPI, use sempre o <strong>Claude Code (CLI)</strong> via terminal.
+      </p>
+    </div>
+  </div>
+  <span class="pg-num">10</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ USO DIA A DIA -->
+<div class="page">
+  <div class="page-header-stripe"></div>
+  <div class="page-inner">
+    <div class="sec-label">09 · Uso</div>
+    <h2 class="sec-title">Uso no <em>dia a dia</em></h2>
+    <div class="sec-divider"></div>
+
+    <p class="body-text">
+      A partir daqui e tudo linguagem natural. O Claude escolhe a ferramenta certa das 41 disponiveis
+      e cuida dos detalhes tecnicos. Exemplos do que voce pode fazer:
+    </p>
+
+    <div class="example-grid">
+      <div class="example-card">
+        <div class="quote-icon">"</div>
+        <p>Me mostra o analytics das minhas ultimas 3 campanhas e qual teve mais cliques hoje.</p>
+        <div class="tool-used">→ get_campaign_analytics</div>
+      </div>
+      <div class="example-card">
+        <div class="quote-icon">"</div>
+        <p>Agende uma mensagem 'Promocao relampago!' para a campanha X amanha as 10h com velocidade normal.</p>
+        <div class="tool-used">→ send_text_to_campaign</div>
+      </div>
+      <div class="example-card">
+        <div class="quote-icon">"</div>
+        <p>Verifique se os numeros 11999999999 e 11888888888 estao bloqueados para a campanha Y.</p>
+        <div class="tool-used">→ verify_number</div>
+      </div>
+      <div class="example-card">
+        <div class="quote-icon">"</div>
+        <p>Crie uma campanha 'Black Friday 2026' e adicione o grupo 120363292004848696@g.us nela.</p>
+        <div class="tool-used">→ create_campaign + add_release_group</div>
+      </div>
+      <div class="example-card">
+        <div class="quote-icon">"</div>
+        <p>Bloqueie o numero 5511999999999 como 'Spammer' e confirme o bloqueio.</p>
+        <div class="tool-used">→ block_number + list_blocked_numbers</div>
+      </div>
+      <div class="example-card">
+        <div class="quote-icon">"</div>
+        <p>Me mostra o QR code da conta ACC123 — preciso reconectar o WhatsApp.</p>
+        <div class="tool-used">→ connect_account + get_account_qrcode</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>Dica: combine com arquivos</strong>
+      <p>
+        O Claude Code pode combinar as ferramentas do Sendflow com leitura e escrita de arquivos.
+        Por exemplo: "Leia a planilha contatos.xlsx, verifique quais numeros estao bloqueados na campanha X
+        e me gere um relatorio." O Claude orquestra tudo automaticamente.
+      </p>
+    </div>
+  </div>
+  <span class="pg-num">11</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ TROUBLESHOOTING -->
+<div class="page">
+  <div class="page-header-stripe"></div>
+  <div class="page-inner">
+    <div class="sec-label">10 · Solucao de problemas</div>
+    <h2 class="sec-title">Trouble<em>shooting</em></h2>
+    <div class="sec-divider"></div>
+
+    <div class="trouble-item">
+      <div class="err">SENDFLOW_API_KEY nao definida</div>
+      <div class="cause">O servidor subiu mas nao encontrou a API key.</div>
+      <div class="fix">Confirme que o <code>--env SENDFLOW_API_KEY=...</code> foi passado no <code>claude mcp add</code>. A key no parametro <code>--env</code> tem precedencia sobre o arquivo <code>.env</code>.</div>
+    </div>
+
+    <div class="trouble-item">
+      <div class="err">401 Unauthorized</div>
+      <div class="cause">API Key invalida, expirada ou sem permissao.</div>
+      <div class="fix">Gere uma nova chave no painel do Sendflow. Remova o servidor (<code>claude mcp remove sendflow</code>) e registre novamente com a nova chave.</div>
+    </div>
+
+    <div class="trouble-item">
+      <div class="err">MCP server sendflow already exists</div>
+      <div class="cause">O servidor ja estava registrado de uma sessao anterior.</div>
+      <div class="fix">Apenas prossiga — a mensagem e informativa, nao e um erro. Ou remova e adicione novamente: <code>claude mcp remove sendflow</code>.</div>
+    </div>
+
+    <div class="trouble-item">
+      <div class="err">claude nao e reconhecido / nao e um comando</div>
+      <div class="cause">O PATH do npm global nao esta no ambiente.</div>
+      <div class="fix">Execute <code>npm config get prefix</code> para descobrir onde o npm instalou. Adicione esse caminho ao PATH nas variaveis de ambiente do Windows.</div>
+    </div>
+
+    <div class="trouble-item">
+      <div class="err">Claude Code on Windows requires git-bash</div>
+      <div class="cause">Git for Windows nao instalado ou variavel nao definida.</div>
+      <div class="fix">Instale o Git em git-scm.com e defina a variavel de ambiente <code>CLAUDE_CODE_GIT_BASH_PATH</code> apontando para <code>C:\Program Files\Git\bin\bash.exe</code>.</div>
+    </div>
+
+    <div class="trouble-item">
+      <div class="err">ERR_MODULE_NOT_FOUND ou zod/v4 import error</div>
+      <div class="cause">Versao incompativel do SDK com Node.js v22.</div>
+      <div class="fix">Garanta que o <code>package.json</code> usa <code>"@modelcontextprotocol/sdk": "^1.9.0"</code> e rode <code>npm install</code> novamente.</div>
+    </div>
+  </div>
+  <span class="pg-num">12</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ CHECKLIST -->
+<div class="page">
+  <div class="page-header-stripe yellow"></div>
+  <div class="page-inner">
+    <div class="sec-label">11 · Validacao final</div>
+    <h2 class="sec-title">Checklist <em>final</em></h2>
+    <div class="sec-divider"></div>
+
+    <p class="body-text">
+      Se todos os itens abaixo estiverem marcados, sua integracao Claude + SendFlow esta pronta.
+    </p>
+
+    <ul class="checklist">
+      <li><div class="check-box"></div><span><code>node --version</code> retorna v18.x ou superior</span></li>
+      <li><div class="check-box"></div><span><code>claude --version</code> responde com numero de versao</span></li>
+      <li><div class="check-box"></div><span>Git for Windows instalado e variavel <code>CLAUDE_CODE_GIT_BASH_PATH</code> definida</span></li>
+      <li><div class="check-box"></div><span>Pasta <code>sendapi/</code> criada com os arquivos: <code>index.js</code>, <code>package.json</code>, <code>.gitignore</code>, <code>.env.example</code></span></li>
+      <li><div class="check-box"></div><span><code>npm install</code> rodou sem erros na pasta <code>sendapi/</code></span></li>
+      <li><div class="check-box"></div><span><code>claude mcp add sendflow</code> executado com a API key correta</span></li>
+      <li><div class="check-box"></div><span><code>claude mcp list</code> mostra <code>sendflow</code> na lista</span></li>
+      <li><div class="check-box"></div><span>Dentro do <code>claude</code>, o prompt "liste minhas contas de WhatsApp" retorna um JSON da SendAPI</span></li>
+      <li><div class="check-box"></div><span>Dentro do <code>claude</code>, o prompt "liste minhas campanhas" retorna dados reais</span></li>
+      <li><div class="check-box"></div><span>Primeiro envio de teste realizado com sucesso</span></li>
+    </ul>
+
+    <div style="margin-top: 32px; background: var(--black); padding: 24px 28px; border-radius: 4px;">
+      <p style="font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 600; color: var(--yellow); margin-bottom: 8px;">Sua integracao esta pronta.</p>
+            <p style="font-size: 13px; color: #7a9ab5; line-height: 1.65;">
+        A partir daqui, qualquer coisa que voce precisar fazer na SendAPI pode ser pedida em linguagem natural
+        diretamente no terminal. O Claude cuida dos endpoints, parametros e autenticacao.
+      </p>
+    </div>
+  </div>
+  <span class="pg-num">13</span>
+</div>
+
+<!-- ═════════════════════════════════════════════════════════════ BACK COVER -->
+<div class="page back-cover">
+  <div class="back-cover-accent"></div>
+  <div class="page-inner" style="display:flex; flex-direction:column; justify-content:space-between; height:100%; min-height:900px;">
+
+    <div class="big-quote">
+      <p>Integre o Claude<br>ao Sendflow e<br>fale com sua <em>API</em><br>em linguagem<br>natural.</p>
+    </div>
+
+    <div class="footer-row">
+      <div class="footer-logo">
+        <svg viewBox="0 0 140 130" width="56" height="52" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polyline points="22,90 62,36 110,16" stroke="#FFDE07" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline points="62,128 62,78 110,105" stroke="#FFDE07" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="footer-logo-text">Send Flow</div>
+      </div>
+      <div class="footer-links">
+        sendflow.pro<br>
+        sendflow.pro/sendapi<br>
+        github.com/sendflow
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
